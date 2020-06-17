@@ -13,20 +13,15 @@ public class MyJWTLibrary {
         JWSObject jwsObject;
         try {
             jwsObject = JWSObject.parse(jwtToken);
-        }
-        catch (ParseException e) {
-
+            System.out.println("JWS object successfully parsed:\n" + jwsObject.getPayload());
+            return jwsObject;
+        } catch (ParseException e) {
             System.err.println("Couldn't parse JWS object: " + e.getMessage());
             return null;
         }
-
-        System.out.println("JWS object successfully parsed:\n" + jwsObject.getPayload());
-
-        return jwsObject;
     }
 
     public static String JWTSign(String secretKey, String payloadMessage){
-
         Payload payload = new Payload(payloadMessage);
 
         System.out.println("JWS payload message: " + payloadMessage);
@@ -41,71 +36,43 @@ public class MyJWTLibrary {
         // Create JWS object
         JWSObject jwsObject = new JWSObject(header, payload);
 
-
         System.out.println("HMAC key: " + secretKey);
 
-        JWSSigner signer = null;
+        JWSSigner signer;
         try {
             signer = new MACSigner(secretKey.getBytes());
-        } catch (KeyLengthException e) {
-            e.printStackTrace();
-            return null;
-        }
-
-        try {
             jwsObject.sign(signer);
-        }
-        catch (JOSEException e) {
-
+        } catch (Exception e) {
             System.err.println("Couldn't sign JWS object: " + e.getMessage());
             return null;
         }
 
         // Serialise JWS object to compact format
         String s = jwsObject.serialize();
-
         System.out.println("Serialised JWS object: " + s);
 
         return s;
     }
 
-    public static boolean JVTVerify(String secretKey, String jwtToken){
-        JWSObject jwsObject;
-        try {
-            jwsObject = JWSObject.parse(jwtToken);
-        }
-        catch (ParseException e) {
-
-            System.err.println("Couldn't parse JWS object: " + e.getMessage());
-            return false;
-        }
-        JWSVerifier verifier = null;
-        try {
-            verifier = new MACVerifier(secretKey.getBytes());
-        } catch (JOSEException e) {
-            e.printStackTrace();
-            return false;
-        }
-
+    public static boolean JWTVerify(String secretKey, String jwtToken) {
+        JWSVerifier verifier;
+        JWSObject jwsObject = null;
         boolean verifiedSignature = false;
 
         try {
+            jwsObject = JWSObject.parse(jwtToken);
+            verifier = new MACVerifier(secretKey.getBytes());
             verifiedSignature = jwsObject.verify(verifier);
-        }
-        catch (JOSEException e) {
-
+        } catch (Exception e) {
             System.err.println("Couldn't verify signature: " + e.getMessage());
-            return false;
         }
 
         if (verifiedSignature) {
             System.out.println("Verified JWS signature!\nRecovered payload message: " + jwsObject.getPayload());
-        }
-        else {
+        } else {
             System.out.println("Bad JWS signature!");
-            return false;
         }
-        return true;
 
+        return verifiedSignature;
     }
 }
