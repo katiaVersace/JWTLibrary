@@ -3,8 +3,20 @@ package com.katiaversace.jwtlibrary;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.text.ParseException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MyJWTLibrary {
 
@@ -74,5 +86,40 @@ public class MyJWTLibrary {
         }
 
         return verifiedSignature;
+    }
+
+    public static String encodeKeyPair(PrivateKey privateKey, Map<String, Object> claims) {
+        String token = null;
+        try {
+
+            Instant now = Instant.now();
+            token = Jwts.builder().setClaims(claims).setIssuedAt(Date.from(now))
+                    .setExpiration(Date.from(now.plus(5, ChronoUnit.MINUTES))).signWith(SignatureAlgorithm.RS256, privateKey).compact();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return token;
+    }
+
+    public static Claims verifyKeyPair(String token, PublicKey publicKey) {
+        Claims claims;
+        try {
+            claims = Jwts.parser().setSigningKey(publicKey).parseClaimsJws(token).getBody();
+        } catch (Exception e) {
+            claims = null;
+        }
+        return claims;
+    }
+
+    public static Map<String, Object> getRSAKeys() throws Exception {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(2048);
+        KeyPair keyPair = keyPairGenerator.generateKeyPair();
+        PrivateKey privateKey = keyPair.getPrivate();
+        PublicKey publicKey = keyPair.getPublic();
+        Map<String, Object> keys = new HashMap<String, Object>();
+        keys.put("private", privateKey);
+        keys.put("public", publicKey);
+        return keys;
     }
 }
